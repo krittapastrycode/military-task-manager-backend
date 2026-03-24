@@ -1,0 +1,22 @@
+<?php
+
+return [
+    'name' => env('APP_NAME', 'Military Task Manager'),
+    'env' => env('APP_ENV', 'production'),
+    'debug' => (bool) env('APP_DEBUG', false),
+    'url' => env('APP_URL', 'http://localhost'),
+    'timezone' => 'Asia/Bangkok',
+    'locale' => 'th',
+    'fallback_locale' => 'en',
+    'faker_locale' => 'th_TH',
+    'cipher' => 'AES-256-CBC',
+    'key' => env('APP_KEY'),
+    'previous_keys' => [
+        ...array_filter(
+            explode(',', env('APP_PREVIOUS_KEYS', ''))
+        ),
+    ],
+    'maintenance' => [
+        'driver' => 'file',
+    ],
+];
