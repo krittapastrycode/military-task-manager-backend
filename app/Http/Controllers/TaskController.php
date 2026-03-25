@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Task;
+use App\Services\GoogleCalendarService;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Carbon\Carbon;
 
 class TaskController extends Controller
 {
+    public function __construct(private GoogleCalendarService $calendar) {}
     /**
      * GET /api/task
      * Paginated task list with sorting, search, and filters.
@@ -117,6 +119,13 @@ class TaskController extends Controller
 
         $task->load(['user', 'createdBy']);
 
+        // Auto-sync to Google Calendar (service account)
+        $eventId = $this->calendar->createEvent($task);
+        if ($eventId) {
+            $task->google_event_id = $eventId;
+            $task->saveQuietly();
+        }
+
         return response()->json($task, 201);
     }
 
@@ -152,7 +161,19 @@ class TaskController extends Controller
         ]);
 
         $task->update($validated);
+        $task->refresh();
         $task->load(['user', 'createdBy']);
+
+        // Real-time sync: update calendar event
+        if ($task->google_event_id) {
+            $this->calendar->updateEvent($task->google_event_id, $task);
+        } else {
+            $eventId = $this->calendar->createEvent($task);
+            if ($eventId) {
+                $task->google_event_id = $eventId;
+                $task->saveQuietly();
+            }
+        }
 
         return response()->json($task);
     }
@@ -164,6 +185,12 @@ class TaskController extends Controller
     public function delete(Request $request, string $id): JsonResponse
     {
         $task = Task::findOrFail($id);
+
+        // Real-time sync: delete calendar event before removing task
+        if ($task->google_event_id) {
+            $this->calendar->deleteEvent($task->google_event_id);
+        }
+
         $task->delete();
 
         return response()->json(['message' => 'Task deleted successfully']);

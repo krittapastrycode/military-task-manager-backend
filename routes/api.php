@@ -50,10 +50,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('groups', TaskGroupController::class);
 
     // Calendar
-    Route::get('/calendar/auth', [CalendarController::class, 'authUrl']);
-    Route::get('/calendar/callback', [CalendarController::class, 'callback']);
     Route::get('/calendar/events', [CalendarController::class, 'events']);
     Route::post('/calendar/sync', [CalendarController::class, 'syncTask']);
+    Route::post('/calendar/sync-all', [CalendarController::class, 'syncAll']);
 
     // LINE
     Route::get('/line/connect', [LineController::class, 'connect']);
