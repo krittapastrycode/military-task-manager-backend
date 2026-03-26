@@ -78,4 +78,38 @@ class CalendarController extends Controller
             'failed'  => $failed,
         ]);
     }
+
+    public function listShares(Request $request): JsonResponse
+    {
+        $shares = $this->calendar->listCalendarShares();
+        return response()->json($shares);
+    }
+
+    public function shareCalendar(Request $request): JsonResponse
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'role'  => 'nullable|string|in:reader,writer',
+        ]);
+
+        $ok = $this->calendar->addCalendarShare(
+            $request->input('email'),
+            $request->input('role', 'reader')
+        );
+
+        return $ok
+            ? response()->json(['message' => 'แชร์ปฏิทินสำเร็จ'])
+            : response()->json(['error' => 'ไม่สามารถแชร์ปฏิทินได้'], 500);
+    }
+
+    public function unshareCalendar(Request $request): JsonResponse
+    {
+        $request->validate(['rule_id' => 'required|string']);
+
+        $ok = $this->calendar->removeCalendarShare($request->input('rule_id'));
+
+        return $ok
+            ? response()->json(['message' => 'ยกเลิกการแชร์สำเร็จ'])
+            : response()->json(['error' => 'ไม่สามารถยกเลิกการแชร์ได้'], 500);
+    }
 }

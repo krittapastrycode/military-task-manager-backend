@@ -53,6 +53,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/calendar/events', [CalendarController::class, 'events']);
     Route::post('/calendar/sync', [CalendarController::class, 'syncTask']);
     Route::post('/calendar/sync-all', [CalendarController::class, 'syncAll']);
+    Route::get('/calendar/shares', [CalendarController::class, 'listShares']);
+    Route::post('/calendar/share', [CalendarController::class, 'shareCalendar']);
+    Route::delete('/calendar/share', [CalendarController::class, 'unshareCalendar']);
 
     // LINE
     Route::get('/line/connect', [LineController::class, 'connect']);

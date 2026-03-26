@@ -153,4 +153,56 @@ class GoogleCalendarService
 
         return $response->successful() ? $response->json('items', []) : [];
     }
+
+    public function listCalendarShares(): array
+    {
+        $token = $this->getAccessToken();
+        if (!$token) return [];
+
+        $calId    = urlencode($this->calendarId);
+        $response = Http::withToken($token)->get("{$this->calendarUrl}/calendars/{$calId}/acl");
+
+        if (!$response->successful()) {
+            Log::error('Google Calendar listCalendarShares failed', $response->json() ?? []);
+            return [];
+        }
+
+        return $response->json('items', []);
+    }
+
+    public function addCalendarShare(string $email, string $role = 'reader'): bool
+    {
+        $token = $this->getAccessToken();
+        if (!$token) return false;
+
+        $calId    = urlencode($this->calendarId);
+        $response = Http::withToken($token)->post(
+            "{$this->calendarUrl}/calendars/{$calId}/acl",
+            [
+                'role'  => $role,
+                'scope' => ['type' => 'user', 'value' => $email],
+            ]
+        );
+
+        if (!$response->successful()) {
+            Log::error('Google Calendar addCalendarShare failed', $response->json() ?? []);
+            return false;
+        }
+
+        return true;
+    }
+
+    public function removeCalendarShare(string $ruleId): bool
+    {
+        $token = $this->getAccessToken();
+        if (!$token) return false;
+
+        $calId      = urlencode($this->calendarId);
+        $encodedId  = urlencode($ruleId);
+        $response   = Http::withToken($token)->delete(
+            "{$this->calendarUrl}/calendars/{$calId}/acl/{$encodedId}"
+        );
+
+        return $response->successful() || $response->status() === 404;
+    }
 }
