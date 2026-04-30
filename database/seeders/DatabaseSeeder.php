@@ -11,6 +11,8 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        $this->call(ProtectionPersonSeeder::class);
+
         User::firstOrCreate(
             ['email' => 'admin@admin.com'],
             [

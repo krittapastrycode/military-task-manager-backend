@@ -4,12 +4,14 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\LineController;
+use App\Http\Controllers\ProtectionPersonController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TaskGroupController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 // Public routes
+Route::get('/protection-persons', [ProtectionPersonController::class, 'index']);
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::get('/auth/google/redirect', [AuthController::class, 'googleRedirect']);
