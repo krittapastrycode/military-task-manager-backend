@@ -69,9 +69,47 @@ class GoogleCalendarService
 
     private function buildEvent(Task $task): array
     {
+        $content = is_array($task->content) ? $task->content : [];
+
+        // Extract person name from content based on task type
+        $personName = $content['vip_name']
+            ?? $content['royal_name']
+            ?? $content['vehicle_or_group']
+            ?? null;
+
+        $summary = $personName
+            ? "{$task->title} - {$personName}"
+            : $task->title;
+
+        // Build description: user description + structured content fields
+        $contentLabels = [
+            'vip_name'          => 'บุคคลอารักขา',
+            'royal_name'        => 'บุคคลอารักขา',
+            'vehicle_info'      => 'ทะเบียน/รถ',
+            'vehicle_or_group'  => 'รถ/คณะ',
+            'origin'            => 'ต้นทาง',
+            'destination'       => 'ปลายทาง',
+            'venue'             => 'สถานที่',
+            'date_range'        => 'ช่วงวันที่',
+            'start_time'        => 'เวลาเริ่ม',
+            'parking_allowed'   => 'ผู้จอดได้',
+            'traffic_direction' => 'เส้นทางรถ',
+        ];
+
+        $lines = [];
+        foreach ($contentLabels as $key => $label) {
+            if (!empty($content[$key])) {
+                $lines[] = "{$label}: {$content[$key]}";
+            }
+        }
+        if ($task->description) {
+            $lines[] = '';
+            $lines[] = $task->description;
+        }
+
         $event = [
-            'summary'     => $task->title,
-            'description' => $task->description ?? '',
+            'summary'     => $summary,
+            'description' => implode("\n", $lines),
         ];
 
         // Priority: deadline_at → due_date
