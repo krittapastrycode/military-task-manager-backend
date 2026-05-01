@@ -27,7 +27,7 @@ class GoogleCalendarService
     private function getAccessToken(): ?string
     {
         return Cache::remember('google_sa_access_token', 3500, function () {
-            $jsonPath = storage_path(config('services.google.service_account_json'));
+            $jsonPath = storage_path(config('services.google.service_account_json') ?: 'app/private/google-service-account.json');
 
             if (!file_exists($jsonPath)) {
                 Log::error('Google service account JSON not found: ' . $jsonPath);
