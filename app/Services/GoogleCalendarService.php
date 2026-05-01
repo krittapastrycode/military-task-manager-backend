@@ -75,6 +75,8 @@ class GoogleCalendarService
         $personName = $content['vip_name']
             ?? $content['royal_name']
             ?? $content['vehicle_or_group']
+            ?? $content['venue']
+            ?? $content['date_range']
             ?? null;
 
         $summary = $personName
@@ -88,6 +90,7 @@ class GoogleCalendarService
             'vehicle_info'      => 'ทะเบียน/รถ',
             'vehicle_or_group'  => 'รถ/คณะ',
             'origin'            => 'ต้นทาง',
+            'arrival_time'      => 'เวลาถึง',
             'destination'       => 'ปลายทาง',
             'venue'             => 'สถานที่',
             'date_range'        => 'ช่วงวันที่',
@@ -101,6 +104,9 @@ class GoogleCalendarService
             if (!empty($content[$key])) {
                 $lines[] = "{$label}: {$content[$key]}";
             }
+        }
+        if (!empty($content['map_link'])) {
+            $lines[] = "🗺️ Google Maps: {$content['map_link']}";
         }
         if ($task->description) {
             $lines[] = '';
