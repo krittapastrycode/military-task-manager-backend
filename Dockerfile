@@ -39,6 +39,9 @@ COPY . .
 # Regenerate autoloader to include app-specific classes (no-scripts = skip artisan calls)
 RUN php -d memory_limit=-1 /usr/bin/composer dump-autoload --no-scripts
 
+# Strip UTF-8 BOM from PHP files (Windows editors sometimes add it, breaks namespace declarations)
+RUN find . -name "*.php" -not -path "./vendor/*" -exec sed -i '1s/^\xEF\xBB\xBF//' {} \;
+
 # Set permissions and clear any stale cached bootstrap files
 RUN rm -f bootstrap/cache/*.php
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache 2>/dev/null || true
