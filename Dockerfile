@@ -36,8 +36,8 @@ RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
 # Copy application
 COPY . .
 
-# Generate autoloader
-RUN php -d memory_limit=-1 /usr/bin/composer dump-autoload
+# Generate autoloader (--no-scripts skips post-autoload-dump artisan calls that need .env)
+RUN php -d memory_limit=-1 /usr/bin/composer dump-autoload --no-scripts
 
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache 2>/dev/null || true

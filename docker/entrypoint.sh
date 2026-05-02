@@ -15,6 +15,9 @@ until php -r "new PDO('pgsql:host=${DB_HOST:-postgres};port=${DB_PORT:-5432};dbn
 done
 echo "PostgreSQL is ready."
 
+# Discover packages (skipped during build since no .env at build time)
+php artisan package:discover --ansi
+
 # Run migrations
 php artisan migrate --force
 
