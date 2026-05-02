@@ -50,9 +50,9 @@ COPY docker/nginx.conf /etc/nginx/http.d/default.conf
 # Supervisor config
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-# Entrypoint script
+# Entrypoint script (strip Windows CRLF so shebang works on Linux)
 COPY docker/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
 
 EXPOSE 8000
 
