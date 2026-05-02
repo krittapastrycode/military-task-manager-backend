@@ -27,9 +27,15 @@ class Task extends Model
         ];
     }
 
-    // Always store deadline_at as Asia/Bangkok local time so the value
-    // in MySQL is unambiguous, and always return it as a Bangkok Carbon.
     protected function deadlineAt(): Attribute
+    {
+        return Attribute::make(
+            get: fn($v) => $v ? Carbon::createFromFormat('Y-m-d H:i:s', $v, 'Asia/Bangkok') : null,
+            set: fn($v) => $v ? Carbon::parse($v)->setTimezone('Asia/Bangkok')->format('Y-m-d H:i:s') : null,
+        );
+    }
+
+    protected function endAt(): Attribute
     {
         return Attribute::make(
             get: fn($v) => $v ? Carbon::createFromFormat('Y-m-d H:i:s', $v, 'Asia/Bangkok') : null,

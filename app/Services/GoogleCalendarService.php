@@ -124,8 +124,11 @@ class GoogleCalendarService
 
         if ($deadline) {
             $start = Carbon::parse($deadline)->setTimezone('Asia/Bangkok');
+            $end   = $task->end_at
+                ? Carbon::parse($task->end_at)->setTimezone('Asia/Bangkok')
+                : $start->copy()->addHour();
             $event['start'] = ['dateTime' => $start->toRfc3339String(), 'timeZone' => 'Asia/Bangkok'];
-            $event['end']   = ['dateTime' => $start->copy()->addHour()->toRfc3339String(), 'timeZone' => 'Asia/Bangkok'];
+            $event['end']   = ['dateTime' => $end->toRfc3339String(), 'timeZone' => 'Asia/Bangkok'];
         }
 
         return $event;

@@ -105,6 +105,7 @@ class TaskController extends Controller
             'task_type_key' => 'nullable|string',
             'priority' => 'nullable|string|in:low,medium,high,urgent',
             'deadline_at' => 'nullable|date',
+            'end_at' => 'nullable|date',
             'content' => 'nullable|array',
             'meta' => 'nullable|array',
             'group_id' => 'nullable|uuid',
@@ -156,6 +157,7 @@ class TaskController extends Controller
             'priority' => 'nullable|string|in:low,medium,high,urgent',
             'status' => 'nullable|string',
             'deadline_at' => 'nullable|date',
+            'end_at' => 'nullable|date',
             'content' => 'nullable|array',
             'meta' => 'nullable|array',
         ]);
