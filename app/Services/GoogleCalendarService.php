@@ -26,45 +26,48 @@ class GoogleCalendarService
 
     private function getAccessToken(): ?string
     {
-        return Cache::remember('google_sa_access_token', 3500, function () {
-            $jsonPath = storage_path(config('services.google.service_account_json') ?: 'app/private/google-service-account.json');
+        $cached = Cache::get('google_sa_access_token');
+        if ($cached) return $cached;
 
-            if (!file_exists($jsonPath)) {
-                Log::error('Google service account JSON not found: ' . $jsonPath);
-                return null;
-            }
+        $jsonPath = storage_path(config('services.google.service_account_json') ?: 'app/private/google-service-account.json');
 
-            $credentials = json_decode(file_get_contents($jsonPath), true);
-            $email       = $credentials['client_email'];
-            $privateKey  = $credentials['private_key'];
+        if (!file_exists($jsonPath)) {
+            Log::error('Google service account JSON not found: ' . $jsonPath);
+            return null;
+        }
 
-            $header  = $this->base64UrlEncode(json_encode(['alg' => 'RS256', 'typ' => 'JWT']));
-            $now     = time();
-            $payload = $this->base64UrlEncode(json_encode([
-                'iss'   => $email,
-                'scope' => 'https://www.googleapis.com/auth/calendar',
-                'aud'   => $this->tokenUrl,
-                'exp'   => $now + 3600,
-                'iat'   => $now,
-            ]));
+        $credentials = json_decode(file_get_contents($jsonPath), true);
+        $email       = $credentials['client_email'];
+        $privateKey  = $credentials['private_key'];
 
-            $signingInput = "{$header}.{$payload}";
-            $signature    = '';
-            openssl_sign($signingInput, $signature, $privateKey, 'sha256WithRSAEncryption');
-            $jwt = "{$signingInput}." . $this->base64UrlEncode($signature);
+        $header  = $this->base64UrlEncode(json_encode(['alg' => 'RS256', 'typ' => 'JWT']));
+        $now     = time();
+        $payload = $this->base64UrlEncode(json_encode([
+            'iss'   => $email,
+            'scope' => 'https://www.googleapis.com/auth/calendar',
+            'aud'   => $this->tokenUrl,
+            'exp'   => $now + 3600,
+            'iat'   => $now,
+        ]));
 
-            $response = Http::asForm()->post($this->tokenUrl, [
-                'grant_type' => 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-                'assertion'  => $jwt,
-            ]);
+        $signingInput = "{$header}.{$payload}";
+        $signature    = '';
+        openssl_sign($signingInput, $signature, $privateKey, 'sha256WithRSAEncryption');
+        $jwt = "{$signingInput}." . $this->base64UrlEncode($signature);
 
-            if ($response->failed()) {
-                Log::error('Failed to get Google service account token', $response->json() ?? []);
-                return null;
-            }
+        $response = Http::asForm()->post($this->tokenUrl, [
+            'grant_type' => 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+            'assertion'  => $jwt,
+        ]);
 
-            return $response->json('access_token');
-        });
+        if ($response->failed()) {
+            Log::error('Failed to get Google service account token', $response->json() ?? []);
+            return null;
+        }
+
+        $token = $response->json('access_token');
+        Cache::put('google_sa_access_token', $token, 3500);
+        return $token;
     }
 
     private function buildEvent(Task $task): array
@@ -164,8 +167,14 @@ class GoogleCalendarService
             $this->buildEvent($task)
         );
 
+        if ($response->status() === 401) {
+            Cache::forget('google_sa_access_token');
+            Log::warning('Google Calendar token expired, cache cleared');
+            return false;
+        }
+
         if (!$response->successful()) {
-            Log::error('Google Calendar updateEvent failed', $response->json() ?? []);
+            Log::error('Google Calendar updateEvent failed', ['status' => $response->status(), 'body' => $response->json() ?? []]);
             return false;
         }
 

@@ -104,11 +104,14 @@ class TaskController extends Controller
             'description' => 'nullable|string',
             'task_type_key' => 'nullable|string',
             'priority' => 'nullable|string|in:low,medium,high,urgent',
-            'deadline_at' => 'nullable|date',
-            'end_at' => 'nullable|date',
+            'deadline_at' => 'nullable|date|after_or_equal:now',
+            'end_at' => 'nullable|date|after_or_equal:deadline_at',
             'content' => 'nullable|array',
             'meta' => 'nullable|array',
             'group_id' => 'nullable|uuid',
+        ], [
+            'deadline_at.after_or_equal' => 'ไม่สามารถสร้างภารกิจในอดีตได้',
+            'end_at.after_or_equal' => 'เวลาเสร็จงานต้องไม่น้อยกว่าวันปฏิบัติภารกิจ',
         ]);
 
         $task = Task::create([
@@ -168,7 +171,15 @@ class TaskController extends Controller
 
         // Real-time sync: update calendar event
         if ($task->google_event_id) {
-            $this->calendar->updateEvent($task->google_event_id, $task);
+            $updated = $this->calendar->updateEvent($task->google_event_id, $task);
+            if (!$updated) {
+                // Event may have been deleted from Calendar manually — recreate it
+                $eventId = $this->calendar->createEvent($task);
+                if ($eventId) {
+                    $task->google_event_id = $eventId;
+                    $task->saveQuietly();
+                }
+            }
         } else {
             $eventId = $this->calendar->createEvent($task);
             if ($eventId) {
