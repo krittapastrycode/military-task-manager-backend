@@ -39,7 +39,8 @@ COPY . .
 # Generate autoloader (--no-scripts skips post-autoload-dump artisan calls that need .env)
 RUN php -d memory_limit=-1 /usr/bin/composer dump-autoload --no-scripts
 
-# Set permissions
+# Set permissions and clear any stale cached bootstrap files
+RUN rm -f bootstrap/cache/*.php
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache 2>/dev/null || true
 RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache
