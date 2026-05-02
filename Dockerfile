@@ -30,13 +30,13 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www/html
 
 # Copy composer files first for caching
-COPY composer.json composer.lock* ./
-RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --no-scripts --prefer-dist
 
 # Copy application
 COPY . .
 
-# Generate autoloader (--no-scripts skips post-autoload-dump artisan calls that need .env)
+# Regenerate autoloader to include app-specific classes (no-scripts = skip artisan calls)
 RUN php -d memory_limit=-1 /usr/bin/composer dump-autoload --no-scripts
 
 # Set permissions and clear any stale cached bootstrap files
