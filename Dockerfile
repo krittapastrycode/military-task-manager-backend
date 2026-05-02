@@ -7,10 +7,16 @@ RUN apk add --no-cache \
     zip \
     unzip \
     nginx \
-    supervisor
+    supervisor \
+    icu-dev \
+    libpng-dev \
+    libjpeg-turbo-dev \
+    freetype-dev \
+    libwebp-dev
 
-# Install PHP extensions
-RUN docker-php-ext-install pdo pdo_pgsql bcmath zip
+# Install PHP extensions (intl + gd required by Filament)
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
+    && docker-php-ext-install pdo pdo_pgsql bcmath zip intl gd exif
 
 # Install Redis extension
 RUN apk add --no-cache --virtual .build-deps $PHPIZE_DEPS \
