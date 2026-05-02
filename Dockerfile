@@ -40,7 +40,7 @@ COPY . .
 RUN php -d memory_limit=-1 /usr/bin/composer dump-autoload --no-scripts
 
 # Strip UTF-8 BOM from PHP files (Windows editors sometimes add it, breaks namespace declarations)
-RUN find . -name "*.php" -not -path "./vendor/*" -exec sed -i '1s/^\xEF\xBB\xBF//' {} \;
+RUN php -r "foreach(new RecursiveIteratorIterator(new RecursiveDirectoryIterator('app')) as \$f){if(\$f->getExtension()!=='php')continue;\$c=file_get_contents(\$f->getPathname());if(substr(\$c,0,3)==='\xEF\xBB\xBF')file_put_contents(\$f->getPathname(),substr(\$c,3));}"
 
 # Set permissions and clear any stale cached bootstrap files
 RUN rm -f bootstrap/cache/*.php
