@@ -39,6 +39,7 @@ class User extends Authenticatable implements FilamentUser
             'is_active' => 'boolean',
             'email_verified' => 'boolean',
             'password' => 'hashed',
+            'role' => 'array',
         ];
     }
 
@@ -69,6 +70,6 @@ class User extends Authenticatable implements FilamentUser
 
     public function canAccessPanel(Panel $panel): bool
     {
-        return in_array($this->role, ['admin', 'commander']);
+        return !empty(array_intersect((array) ($this->role ?? []), ['admin', 'commander']));
     }
 }

@@ -29,7 +29,7 @@ class AuthController extends Controller
             'name' => $validated['name'],
             'rank' => $validated['rank'] ?? null,
             'unit' => $validated['unit'] ?? null,
-            'role' => 'user',
+            'role' => ['user'],
         ]);
 
         $token = $user->createToken('auth-token')->plainTextToken;

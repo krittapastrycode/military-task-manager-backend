@@ -35,12 +35,15 @@ class UserResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return auth()->user()?->role === 'admin';
+        return in_array('admin', (array) (auth()->user()?->role ?? []));
     }
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->where('role', 'user');
+        // Show only users whose roles don't include admin or commander
+        return parent::getEloquentQuery()
+            ->whereRaw("NOT (role @> '[\"admin\"]'::jsonb)")
+            ->whereRaw("NOT (role @> '[\"commander\"]'::jsonb)");
     }
 
     public static function form(Form $form): Form
@@ -84,12 +87,7 @@ class UserResource extends Resource
                 ->tel()
                 ->maxLength(20),
 
-            Select::make('role')
-                ->label('สิทธิ์')
-                ->options(['admin' => 'ผู้ดูแลระบบ', 'commander' => 'ผู้บังคับบัญชา', 'user' => 'ผู้ใช้งาน'])
-                ->default('user')
-                ->required()
-                ->native(false),
+            \Filament\Forms\Components\Hidden::make('role')->default(['user']),
 
             Toggle::make('is_active')
                 ->label('เปิดใช้งาน')
@@ -135,18 +133,11 @@ class UserResource extends Resource
 
                 TextColumn::make('role')
                     ->label('สิทธิ์')
-                    ->badge()
-                    ->color(fn (string $state): string => match($state) {
-                        'admin'     => 'danger',
-                        'commander' => 'warning',
-                        default     => 'gray',
-                    })
-                    ->formatStateUsing(fn (string $state): string => match($state) {
-                        'admin'     => 'ผู้ดูแลระบบ',
-                        'commander' => 'ผู้บังคับบัญชา',
-                        default     => 'ผู้ใช้งาน',
-                    })
-                    ->sortable(),
+                    ->formatStateUsing(function ($state): string {
+                        $map = ['admin' => 'ผู้ดูแลระบบ', 'commander' => 'ผู้บังคับบัญชา', 'user' => 'ผู้ใช้งาน'];
+                        $roles = is_array($state) ? $state : (array) $state;
+                        return implode(', ', array_map(fn($r) => $map[$r] ?? $r, $roles));
+                    }),
 
                 TextColumn::make('tasks_count')
                     ->label('จำนวนภารกิจ')

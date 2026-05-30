@@ -35,12 +35,12 @@ class AdminResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return auth()->user()?->role === 'admin';
+        return in_array('admin', (array) (auth()->user()?->role ?? []));
     }
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->whereIn('role', ['admin', 'commander']);
+        return parent::getEloquentQuery();
     }
 
     public static function form(Form $form): Form
@@ -87,7 +87,8 @@ class AdminResource extends Resource
             Select::make('role')
                 ->label('สิทธิ์')
                 ->options(['admin' => 'ผู้ดูแลระบบ', 'commander' => 'ผู้บังคับบัญชา', 'user' => 'ผู้ใช้งาน'])
-                ->default('admin')
+                ->multiple()
+                ->default(['user'])
                 ->required()
                 ->native(false),
 
@@ -105,6 +106,15 @@ class AdminResource extends Resource
                     ->label('ชื่อ-นามสกุล')
                     ->searchable()
                     ->sortable(),
+
+                TextColumn::make('role')
+                    ->label('สิทธิ์')
+                    ->formatStateUsing(function ($state): string {
+                        $map = ['admin' => 'ผู้ดูแลระบบ', 'commander' => 'ผู้บังคับบัญชา', 'user' => 'ผู้ใช้งาน'];
+                        $roles = is_array($state) ? $state : (array) $state;
+                        return implode(', ', array_map(fn($r) => $map[$r] ?? $r, $roles));
+                    })
+                    ->searchable(),
 
                 TextColumn::make('email')
                     ->label('อีเมล')
