@@ -68,8 +68,18 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(RefreshToken::class);
     }
 
+    public function hasRole(string $role): bool
+    {
+        $roles = $this->role;
+        if (is_string($roles)) {
+            $decoded = json_decode($roles, true);
+            $roles = is_array($decoded) ? $decoded : [$roles];
+        }
+        return in_array($role, (array) ($roles ?? []), true);
+    }
+
     public function canAccessPanel(Panel $panel): bool
     {
-        return !empty(array_intersect((array) ($this->role ?? []), ['admin', 'commander']));
+        return $this->hasRole('admin') || $this->hasRole('commander');
     }
 }

@@ -35,7 +35,7 @@ class AdminResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return in_array('admin', (array) (auth()->user()?->role ?? []));
+        return auth()->user()?->hasRole('admin') ?? false;
     }
 
     public static function getEloquentQuery(): Builder

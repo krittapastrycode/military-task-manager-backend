@@ -10,8 +10,8 @@ class RoleMiddleware
 {
     public function handle(Request $request, Closure $next, string ...$roles): Response
     {
-        $userRoles = (array) ($request->user()?->role ?? []);
-        if (!$request->user() || empty(array_intersect($userRoles, $roles))) {
+        $user = $request->user();
+        if (!$user || !collect($roles)->contains(fn($r) => $user->hasRole($r))) {
             return response()->json(['message' => 'ไม่มีสิทธิ์ดำเนินการนี้'], 403);
         }
 
