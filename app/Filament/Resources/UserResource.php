@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\UserResource\Pages;
 use App\Models\User;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
@@ -83,7 +84,12 @@ class UserResource extends Resource
                 ->tel()
                 ->maxLength(20),
 
-            \Filament\Forms\Components\Hidden::make('role')->default('user'),
+            Select::make('role')
+                ->label('สิทธิ์')
+                ->options(['admin' => 'ผู้ดูแลระบบ', 'commander' => 'ผู้บังคับบัญชา', 'user' => 'ผู้ใช้งาน'])
+                ->default('user')
+                ->required()
+                ->native(false),
 
             Toggle::make('is_active')
                 ->label('เปิดใช้งาน')
@@ -126,6 +132,21 @@ class UserResource extends Resource
                 IconColumn::make('is_active')
                     ->label('สถานะ')
                     ->boolean(),
+
+                TextColumn::make('role')
+                    ->label('สิทธิ์')
+                    ->badge()
+                    ->color(fn (string $state): string => match($state) {
+                        'admin'     => 'danger',
+                        'commander' => 'warning',
+                        default     => 'gray',
+                    })
+                    ->formatStateUsing(fn (string $state): string => match($state) {
+                        'admin'     => 'ผู้ดูแลระบบ',
+                        'commander' => 'ผู้บังคับบัญชา',
+                        default     => 'ผู้ใช้งาน',
+                    })
+                    ->sortable(),
 
                 TextColumn::make('tasks_count')
                     ->label('จำนวนภารกิจ')
