@@ -280,6 +280,10 @@ class TaskController extends Controller
             : null;
 
         $types = ['royal_security', 'vip_protection', 'convoy', 'traffic', 'venue_security'];
+        $typeFilter = $request->query('task_type_key');
+        if ($typeFilter && !in_array($typeFilter, $types, true)) {
+            $typeFilter = null;
+        }
 
         $emptyCounts = fn () => array_fill_keys($types, 0);
 
@@ -299,9 +303,10 @@ class TaskController extends Controller
                 ];
             }
 
-            $tasks = Task::whereNotNull('completed_at')
-                ->whereBetween('completed_at', [$start, $end])
-                ->get(['task_type_key', 'completed_at']);
+            $query = Task::whereNotNull('completed_at')
+                ->whereBetween('completed_at', [$start, $end]);
+            if ($typeFilter) $query->where('task_type_key', $typeFilter);
+            $tasks = $query->get(['task_type_key', 'completed_at']);
 
             foreach ($tasks as $task) {
                 $key = (int) Carbon::parse($task->completed_at)->month;
@@ -340,9 +345,10 @@ class TaskController extends Controller
             $weekIndex++;
         }
 
-        $tasks = Task::whereNotNull('completed_at')
-            ->whereBetween('completed_at', [$start, $end])
-            ->get(['task_type_key', 'completed_at']);
+        $query = Task::whereNotNull('completed_at')
+            ->whereBetween('completed_at', [$start, $end]);
+        if ($typeFilter) $query->where('task_type_key', $typeFilter);
+        $tasks = $query->get(['task_type_key', 'completed_at']);
 
         foreach ($tasks as $task) {
             $completedAt = Carbon::parse($task->completed_at);
