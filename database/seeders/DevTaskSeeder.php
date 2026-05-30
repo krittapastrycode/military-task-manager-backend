@@ -101,34 +101,18 @@ class DevTaskSeeder extends Seeder
         12 => 'ธ.ค.',
     ];
 
-    // ─── Status distribution (indexes 0-19 for 20 tasks) ────────────────────
-    // 10 success, 3 progress, 3 pending, 2 cancel, 1 on-hold, 1 reject
-    private const STATUS_POOL = [
-        'success', 'success', 'success', 'success', 'success',
-        'success', 'success', 'success', 'success', 'success',
-        'progress', 'progress', 'progress',
-        'pending', 'pending', 'pending',
-        'cancel', 'cancel',
-        'on-hold',
-        'reject',
-    ];
-
-    // ─── Task type pool (4 of each type per month, 20 total) ─────────────────
-    private const TYPE_POOL = [
-        'royal_security', 'royal_security', 'royal_security', 'royal_security',
-        'vip_protection', 'vip_protection', 'vip_protection', 'vip_protection',
-        'convoy',         'convoy',         'convoy',         'convoy',
-        'traffic',        'traffic',        'traffic',        'traffic',
-        'venue_security', 'venue_security', 'venue_security', 'venue_security',
-    ];
-
-    // ─── Priority pool ────────────────────────────────────────────────────────
-    private const PRIORITY_POOL = [
-        'urgent', 'urgent', 'urgent',
-        'high',   'high',   'high',   'high',   'high',
-        'medium', 'medium', 'medium', 'medium', 'medium', 'medium',
-        'low',    'low',    'low',    'low',    'low',    'low',
-    ];
+    // Weighted random picker: ['value' => weight, ...]
+    private function weightedRandom(array $weights): string
+    {
+        $total = array_sum($weights);
+        $r = rand(1, $total);
+        $cumulative = 0;
+        foreach ($weights as $value => $weight) {
+            $cumulative += $weight;
+            if ($r <= $cumulative) return $value;
+        }
+        return array_key_first($weights);
+    }
 
     public function run(): void
     {
@@ -156,22 +140,37 @@ class DevTaskSeeder extends Seeder
 
         $totalCreated = 0;
 
-        // ── Generate 20 tasks × 12 months ────────────────────────────────────
+        // Monthly task counts — uneven, realistic peaks and quiet months
+        $monthCounts = [1=>12, 2=>8, 3=>22, 4=>15, 5=>30, 6=>11,
+                        7=>27, 8=>9,  9=>18, 10=>33, 11=>14, 12=>7];
+
+        // ── Generate tasks per month ──────────────────────────────────────────
         for ($month = 1; $month <= 12; $month++) {
-            $daysInMonth = Carbon::create(2026, $month, 1)->daysInMonth;
+            $daysInMonth  = Carbon::create(2026, $month, 1)->daysInMonth;
+            $taskCount    = $monthCounts[$month];
 
-            // Shuffle pools so distribution is random per month
-            $statusPool = self::STATUS_POOL;
-            $typePool   = self::TYPE_POOL;
-            $priorityPool = self::PRIORITY_POOL;
-            shuffle($statusPool);
-            shuffle($typePool);
-            shuffle($priorityPool);
-
-            for ($i = 0; $i < 20; $i++) {
-                $status       = $statusPool[$i];
-                $taskTypeKey  = $typePool[$i];
-                $priority     = $priorityPool[$i];
+            for ($i = 0; $i < $taskCount; $i++) {
+                $status      = $this->weightedRandom([
+                    'success'  => 45,
+                    'progress' => 18,
+                    'pending'  => 15,
+                    'cancel'   => 12,
+                    'on-hold'  => 6,
+                    'reject'   => 4,
+                ]);
+                $taskTypeKey = $this->weightedRandom([
+                    'convoy'         => 30,
+                    'vip_protection' => 25,
+                    'traffic'        => 20,
+                    'venue_security' => 15,
+                    'royal_security' => 10,
+                ]);
+                $priority    = $this->weightedRandom([
+                    'medium' => 40,
+                    'high'   => 28,
+                    'low'    => 18,
+                    'urgent' => 14,
+                ]);
 
                 $deadlineDay  = rand(10, min(28, $daysInMonth));
                 $deadlineAt   = Carbon::create(2026, $month, $deadlineDay, 8, 0, 0, 'Asia/Bangkok');
