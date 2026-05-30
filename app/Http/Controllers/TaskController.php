@@ -47,6 +47,14 @@ class TaskController extends Controller
             $query->where('deadline_at', '<=', Carbon::parse($dateTo)->endOfDay());
         }
 
+        // Filter by completed_at range (used by PDF export)
+        if ($completedFrom = $request->query('completed_from')) {
+            $query->where('completed_at', '>=', Carbon::parse($completedFrom)->startOfDay());
+        }
+        if ($completedTo = $request->query('completed_to')) {
+            $query->where('completed_at', '<=', Carbon::parse($completedTo)->endOfDay());
+        }
+
         // Sorting
         $sortBy = $request->query('sort_by', 'created_at');
         $sortDirection = $request->query('sort_direction', 'desc');
@@ -55,8 +63,9 @@ class TaskController extends Controller
             $query->orderBy($sortBy, $sortDirection === 'asc' ? 'asc' : 'desc');
         }
 
-        // Pagination
-        $perPage = min((int) $request->query('per_page', 10), 200);
+        // Pagination (allow up to 500 for export queries that use completed_from/completed_to)
+        $maxPerPage = $request->query('completed_from') || $request->query('completed_to') ? 500 : 200;
+        $perPage = min((int) $request->query('per_page', 10), $maxPerPage);
         $paginated = $query->paginate($perPage);
 
         return response()->json([
