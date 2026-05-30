@@ -85,7 +85,7 @@ class DevTaskSeeder extends Seeder
         'ขบวนนายกรัฐมนตรี',
     ];
 
-    // ─── Thai month abbreviations (BE year 2568 = 2025 CE) ───────────────────
+    // ─── Thai month abbreviations (BE year 2568 = 2026 CE) ───────────────────
     private const THAI_MONTHS = [
         1  => 'ม.ค.',
         2  => 'ก.พ.',
@@ -158,7 +158,7 @@ class DevTaskSeeder extends Seeder
 
         // ── Generate 20 tasks × 12 months ────────────────────────────────────
         for ($month = 1; $month <= 12; $month++) {
-            $daysInMonth = Carbon::create(2025, $month, 1)->daysInMonth;
+            $daysInMonth = Carbon::create(2026, $month, 1)->daysInMonth;
 
             // Shuffle pools so distribution is random per month
             $statusPool = self::STATUS_POOL;
@@ -174,7 +174,7 @@ class DevTaskSeeder extends Seeder
                 $priority     = $priorityPool[$i];
 
                 $deadlineDay  = rand(10, min(28, $daysInMonth));
-                $deadlineAt   = Carbon::create(2025, $month, $deadlineDay, 8, 0, 0, 'Asia/Bangkok');
+                $deadlineAt   = Carbon::create(2026, $month, $deadlineDay, 8, 0, 0, 'Asia/Bangkok');
 
                 $completedAt  = null;
                 $completed    = false;
@@ -182,7 +182,7 @@ class DevTaskSeeder extends Seeder
 
                 if ($status === 'success') {
                     $completed   = true;
-                    $completedAt = Carbon::create(2025, $month, rand(1, min(28, $daysInMonth)), rand(14, 18), 0, 0, 'Asia/Bangkok');
+                    $completedAt = Carbon::create(2026, $month, rand(1, min(28, $daysInMonth)), rand(14, 18), 0, 0, 'Asia/Bangkok');
                     $endAt       = $completedAt->copy()->addHours(rand(1, 3));
                 }
 
@@ -194,7 +194,7 @@ class DevTaskSeeder extends Seeder
                 [$content, $title] = $this->buildContent($taskTypeKey, $month);
 
                 // ── created_at = start of that month ──────────────────────────
-                $createdAt = Carbon::create(2025, $month, 1, 0, 0, 0, 'Asia/Bangkok');
+                $createdAt = Carbon::create(2026, $month, 1, 0, 0, 0, 'Asia/Bangkok');
 
                 try {
                     $task = new Task();
