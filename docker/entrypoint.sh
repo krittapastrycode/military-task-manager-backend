@@ -18,6 +18,9 @@ echo "PostgreSQL is ready."
 # Discover packages (skipped during build since no .env at build time)
 php artisan package:discover --ansi
 
+# Publish Filament assets
+php artisan filament:assets
+
 # Run migrations
 php artisan migrate --force
 

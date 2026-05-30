@@ -33,9 +33,14 @@ class AdminResource extends Resource
 
     protected static ?string $slug = 'admins';
 
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->role === 'admin';
+    }
+
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->where('role', 'admin');
+        return parent::getEloquentQuery()->whereIn('role', ['admin', 'commander']);
     }
 
     public static function form(Form $form): Form
@@ -81,7 +86,7 @@ class AdminResource extends Resource
 
             Select::make('role')
                 ->label('สิทธิ์')
-                ->options(['admin' => 'ผู้ดูแลระบบ', 'user' => 'ผู้ใช้งาน'])
+                ->options(['admin' => 'ผู้ดูแลระบบ', 'commander' => 'ผู้บังคับบัญชา', 'user' => 'ผู้ใช้งาน'])
                 ->default('admin')
                 ->required()
                 ->native(false),

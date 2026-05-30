@@ -29,19 +29,27 @@ Route::middleware('auth:sanctum')->group(function () {
     // Me (alias)
     Route::get('/me', [UserController::class, 'profile']);
 
+    // Report chart (read-only, all authenticated users)
+    Route::get('/report/chart', [TaskController::class, 'chart']);
+
     // Task
     Route::prefix('task')->group(function () {
+        // Read + complete: accessible to all authenticated users
         Route::get('/today', [TaskController::class, 'getToday']);
         Route::get('/', [TaskController::class, 'get']);
-        Route::post('/', [TaskController::class, 'create']);
         Route::get('/{id}', [TaskController::class, 'find']);
-        Route::patch('/{id}', [TaskController::class, 'update']);
-        Route::delete('/{id}', [TaskController::class, 'delete']);
-        Route::patch('/approve/{id}', [TaskController::class, 'approve']);
-        Route::patch('/reject/{id}', [TaskController::class, 'reject']);
-        Route::patch('/cancel/{id}', [TaskController::class, 'cancel']);
-        Route::patch('/on-hold/{id}', [TaskController::class, 'onHold']);
         Route::patch('/complete/{id}', [TaskController::class, 'complete']);
+
+        // Management actions: restricted to admin / commander
+        Route::middleware('role:admin,commander')->group(function () {
+            Route::post('/', [TaskController::class, 'create']);
+            Route::patch('/{id}', [TaskController::class, 'update']);
+            Route::delete('/{id}', [TaskController::class, 'delete']);
+            Route::patch('/approve/{id}', [TaskController::class, 'approve']);
+            Route::patch('/reject/{id}', [TaskController::class, 'reject']);
+            Route::patch('/cancel/{id}', [TaskController::class, 'cancel']);
+            Route::patch('/on-hold/{id}', [TaskController::class, 'onHold']);
+        });
     });
 
     // Admin / Personnel

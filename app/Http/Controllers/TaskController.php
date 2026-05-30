@@ -248,13 +248,115 @@ class TaskController extends Controller
     {
         $task = Task::findOrFail($id);
         $task->update([
-            'status' => 'completed',
+            'status' => 'success',
             'completed' => true,
             'completed_at' => now(),
         ]);
         $task->load(['user', 'createdBy']);
 
         return response()->json($task);
+    }
+
+    /**
+     * GET /api/report/chart
+     * Completed-task counts per task type, grouped by month (year view)
+     * or by week (quarter view).
+     */
+    public function chart(Request $request): JsonResponse
+    {
+        $year = (int) $request->query('year', now()->year);
+        $quarterParam = $request->query('quarter');
+        $quarter = ($quarterParam !== null && $quarterParam !== '')
+            ? (int) $quarterParam
+            : null;
+
+        $types = ['royal_security', 'vip_protection', 'convoy', 'traffic', 'venue_security'];
+
+        $emptyCounts = fn () => array_fill_keys($types, 0);
+
+        if ($quarter === null) {
+            // ── Year view: 12 months ──
+            $start = Carbon::create($year, 1, 1)->startOfDay();
+            $end = Carbon::create($year, 12, 31)->endOfDay();
+
+            $thaiMonths = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+
+            $data = [];
+            for ($m = 1; $m <= 12; $m++) {
+                $data[$m] = [
+                    'period' => sprintf('%04d-%02d', $year, $m),
+                    'label' => $thaiMonths[$m - 1],
+                    ...$emptyCounts(),
+                ];
+            }
+
+            $tasks = Task::whereNotNull('completed_at')
+                ->whereBetween('completed_at', [$start, $end])
+                ->get(['task_type_key', 'completed_at']);
+
+            foreach ($tasks as $task) {
+                $key = (int) Carbon::parse($task->completed_at)->month;
+                $type = $task->task_type_key;
+                if (isset($data[$key]) && in_array($type, $types, true)) {
+                    $data[$key][$type]++;
+                }
+            }
+
+            return response()->json(['data' => array_values($data)]);
+        }
+
+        // ── Quarter view: weeks within the quarter ──
+        $quarter = max(1, min(4, $quarter));
+        $startMonth = ($quarter - 1) * 3 + 1;
+        $endMonth = $startMonth + 2;
+
+        $start = Carbon::create($year, $startMonth, 1)->startOfDay();
+        $end = Carbon::create($year, $endMonth, 1)->endOfMonth()->endOfDay();
+
+        // Build week buckets: each week starts on Monday.
+        $buckets = [];
+        $cursor = $start->copy()->startOfWeek(Carbon::MONDAY);
+        $weekIndex = 1;
+        while ($cursor <= $end) {
+            $weekStart = $cursor->copy();
+            $weekEnd = $cursor->copy()->endOfWeek(Carbon::SUNDAY);
+            $buckets[] = [
+                'start' => $weekStart,
+                'end' => $weekEnd,
+                'period' => $weekStart->format('Y-m-d'),
+                'label' => 'สป.' . $weekIndex,
+                'counts' => $emptyCounts(),
+            ];
+            $cursor->addWeek();
+            $weekIndex++;
+        }
+
+        $tasks = Task::whereNotNull('completed_at')
+            ->whereBetween('completed_at', [$start, $end])
+            ->get(['task_type_key', 'completed_at']);
+
+        foreach ($tasks as $task) {
+            $completedAt = Carbon::parse($task->completed_at);
+            $type = $task->task_type_key;
+            if (!in_array($type, $types, true)) {
+                continue;
+            }
+            foreach ($buckets as &$bucket) {
+                if ($completedAt->betweenIncluded($bucket['start'], $bucket['end'])) {
+                    $bucket['counts'][$type]++;
+                    break;
+                }
+            }
+            unset($bucket);
+        }
+
+        $data = array_map(fn ($b) => [
+            'period' => $b['period'],
+            'label' => $b['label'],
+            ...$b['counts'],
+        ], $buckets);
+
+        return response()->json(['data' => $data]);
     }
 
     private function changeStatus(string $id, string $status): JsonResponse

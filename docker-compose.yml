@@ -1,8 +1,7 @@
 services:
-  # PostgreSQL Database
-  postgres:
+  mtml-postgres:
     image: postgres:15-alpine
-    container_name: pgsql
+    container_name: mtml-postgres
     environment:
       POSTGRES_DB: military_task_db
       POSTGRES_USER: MTML
@@ -10,25 +9,24 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - mtml-postgres-data:/var/lib/postgresql/data
     networks:
-      - app-network
+      - mtml-net
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U MTML -d military_task_db"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # Redis Cache
-  redis:
+  mtml-redis:
     image: redis:7-alpine
-    container_name: redis
+    container_name: mtml-redis
     ports:
       - "6379:6379"
     volumes:
-      - redis_data:/data
+      - mtml-redis-data:/data
     networks:
-      - app-network
+      - mtml-net
     command: redis-server --appendonly yes
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -36,23 +34,22 @@ services:
       timeout: 5s
       retries: 5
 
-  # Laravel Backend API
-  backend:
+  mtml-backend:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: backend
+    container_name: mtml-backend
     environment:
       - APP_ENV=local
       - APP_DEBUG=true
       - APP_KEY=${APP_KEY}
       - DB_CONNECTION=pgsql
-      - DB_HOST=postgres
+      - DB_HOST=mtml-postgres
       - DB_PORT=5432
       - DB_DATABASE=military_task_db
       - DB_USERNAME=MTML
       - DB_PASSWORD=password
-      - REDIS_HOST=redis
+      - REDIS_HOST=mtml-redis
       - REDIS_PORT=6379
       - CACHE_STORE=redis
       - SESSION_DRIVER=redis
@@ -65,17 +62,17 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      postgres:
+      mtml-postgres:
         condition: service_healthy
-      redis:
+      mtml-redis:
         condition: service_healthy
     networks:
-      - app-network
+      - mtml-net
     restart: unless-stopped
 
   # Next.js Frontend (production profile only — สำหรับ deploy จริง)
   # สำหรับ dev: ไม่ต้อง run service นี้ ใช้ npm run dev แทน
-  frontend:
+  mtml-frontend:
     profiles:
       - production
     build:
@@ -83,23 +80,23 @@ services:
       dockerfile: Dockerfile
       args:
         - NEXT_PUBLIC_API_URL=http://localhost:8000
-    container_name: frontend
+    container_name: mtml-frontend
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8000
     ports:
       - "3000:3000"
     depends_on:
-      - backend
+      - mtml-backend
     networks:
-      - app-network
+      - mtml-net
     restart: unless-stopped
 
 volumes:
-  postgres_data:
+  mtml-postgres-data:
     driver: local
-  redis_data:
+  mtml-redis-data:
     driver: local
 
 networks:
-  app-network:
+  mtml-net:
     driver: bridge

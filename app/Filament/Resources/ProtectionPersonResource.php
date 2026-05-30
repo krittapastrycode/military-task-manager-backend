@@ -32,6 +32,11 @@ class ProtectionPersonResource extends Resource
 
     protected static ?int $navigationSort = 3;
 
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->role === 'admin';
+    }
+
     public static function form(Form $form): Form
     {
         return $form->schema([

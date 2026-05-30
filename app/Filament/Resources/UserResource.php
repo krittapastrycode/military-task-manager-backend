@@ -4,7 +4,6 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\UserResource\Pages;
 use App\Models\User;
-use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
@@ -32,6 +31,11 @@ class UserResource extends Resource
     protected static ?int $navigationSort = 2;
 
     protected static ?string $slug = 'users';
+
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->role === 'admin';
+    }
 
     public static function getEloquentQuery(): Builder
     {
@@ -79,12 +83,7 @@ class UserResource extends Resource
                 ->tel()
                 ->maxLength(20),
 
-            Select::make('role')
-                ->label('สิทธิ์')
-                ->options(['admin' => 'ผู้ดูแลระบบ', 'user' => 'ผู้ใช้งาน'])
-                ->default('user')
-                ->required()
-                ->native(false),
+            \Filament\Forms\Components\Hidden::make('role')->default('user'),
 
             Toggle::make('is_active')
                 ->label('เปิดใช้งาน')
